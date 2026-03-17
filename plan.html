@@ -162,6 +162,89 @@
             border-color: #cbd5e1;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
+
+        /* REFINED MOBILE FIX */
+        @media screen and (max-width: 1024px) {
+
+            html,
+            body,
+            #app,
+            .layout-container,
+            .sidebar-left,
+            .main-content {
+                width: 100% !important;
+                max-width: 100vw !important;
+                min-width: 0 !important;
+                height: auto !important;
+                min-height: 0 !important;
+                overflow: visible !important;
+                display: block !important;
+                position: static !important;
+            }
+
+            .layout-container {
+                display: flex !important;
+                flex-direction: column-reverse !important; /* Table (Main Content) above Sidebar (Charts) */
+            }
+
+            .sidebar-left {
+                border-right: none !important;
+                border-top: 2px solid #e2e8f0 !important;
+                padding: 16px !important;
+                width: 100% !important;
+            }
+
+            .main-content {
+                padding: 8px !important;
+                width: 100% !important;
+            }
+
+            .card-nuxt {
+                padding: 8px !important;
+            }
+
+            header {
+                display: flex !important;
+                flex-direction: column !important;
+                width: 100% !important;
+                height: auto !important;
+                padding: 16px !important;
+                gap: 12px !important;
+            }
+
+            header .flex.items-center.gap-8 {
+                width: 100% !important;
+                justify-content: space-between !important;
+                gap: 4px !important;
+            }
+
+            header .flex.items-center.gap-3 {
+                flex-wrap: wrap !important;
+                justify-content: flex-start !important;
+                width: 100% !important;
+            }
+
+            header input[type="text"] {
+                width: 100% !important;
+                flex: 1 !important;
+            }
+
+            .plan-table th,
+            .plan-table td {
+                padding: 4px 2px !important;
+                font-size: 0.65rem !important;
+            }
+            
+            .chart-container {
+                min-width: 0 !important;
+                width: 100% !important;
+            }
+            
+            #plan-stacked-bar-chart {
+                min-width: 0 !important;
+                width: 100% !important;
+            }
+        }
     </style>
 </head>
 
