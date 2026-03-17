@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Báo cáo Quân số Dự án</title>
+    <!-- Open Graph Meta Tags cho việc chia sẻ link (Zalo, Facebook, v.v.) -->
+    <meta property="og:title" content="Báo cáo Quân số Dự án">
+    <meta property="og:description" content="Dashboard theo dõi dữ liệu Quân số Dự án chi tiết">
+    <meta property="og:type" content="website">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #ffffff;
+            color: #334155;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100%;
+        }
+
+        .layout-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            background: #fafafa;
+        }
+
+        .sidebar-left {
+            width: 300px;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            flex-shrink: 0;
+            padding: 24px 16px;
+            gap: 20px;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.02);
+        }
+
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            background: #fdfdfd;
+        }
+
+        .card-nuxt {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            padding: 16px;
+            transition: all 0.2s;
+        }
+
+        .card-nuxt:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-container {
+            width: 100%;
+        }
+
+        .table-nuxt {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .table-nuxt tr {
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .table-nuxt thead tr {
+            height: 32px;
+            border-bottom: 2px solid #cbd5e1;
+            background: #f8fafc;
+        }
+
+        .table-nuxt th {
+            padding: 0 8px;
+            color: #1e293b;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            letter-spacing: 0.05em;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        .table-nuxt td {
+            padding: 4px 8px;
+            border-bottom: 1px solid #cbd5e1;
+            /* Bolder line color */
+            vertical-align: middle;
+        }
+
+        .input-nuxt {
+            border: 1px solid #e2e8f0;
+            border-radius: 0;
+            padding: 8px 12px;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            background: #ffffff;
+            color: #1e293b;
+        }
+
+        .input-nuxt:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+            outline: none;
+        }
+
+        .btn-nuxt-primary {
+            background: #10b981;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 0;
+            font-weight: 600;
+            font-size: 0.875rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-nuxt-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-nuxt-secondary {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+            padding: 10px 16px;
+            border-radius: 0;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-nuxt-secondary:hover {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .active-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 0;
+            background: #2563eb;
+        }
+
+        [v-cloak] {
+            display: none;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #e2e8f0;
+            border-radius: 10px;
+        }
+
+        /* REFINED MOBILE FIX */
+        @media screen and (max-width: 1024px) {
+
+            html,
+            body,
+            #app,
+            .layout-container,
+            .sidebar-left,
+            .main-content {
+                width: 100% !important;
+                max-width: 100vw !important;
+                min-width: 0 !important;
+                height: auto !important;
+                min-height: 0 !important;
+                overflow: visible !important;
+                display: block !important;
+                /* Force block stacking */
+                position: static !important;
+            }
+
+            .layout-container {
+                display: block !important;
+            }
+
+            .sidebar-left {
+                border-right: none !important;
+                border-bottom: 2px solid #e2e8f0 !important;
+                padding: 16px !important;
+            }
+
+            .main-content {
+                padding: 8px !important;
+            }
+
+            .card-nuxt {
+                padding: 4px !important;
+            }
+
+            header {
+                display: flex !important;
+                flex-direction: column !important;
+                width: 100% !important;
+                height: auto !important;
+                padding: 16px !important;
+            }
+
+            header * {
+                max-width: 100% !important;
+            }
+
+            header .flex.items-center.gap-3 {
+                flex-wrap: wrap !important;
+                justify-content: flex-start !important;
+            }
+
+            header input[type="text"] {
+                width: 100% !important;
+            }
+
+            .table-scroll-wrapper {
+                width: 100% !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+                display: block !important;
+            }
+
+            .table-nuxt {
+                min-width: 100% !important;
+                width: auto !important;
+                /* Allow table to expand naturally */
+                table-layout: auto !important;
+                display: table !important;
+            }
+
+            .table-nuxt th,
+            .table-nuxt td {
+                width: auto !important;
+                min-width: 0 !important;
+                padding: 2px 2px !important;
+                font-size: 0.6rem !important;
+                line-height: 1.1 !important;
+            }
+
+            .stt-col {
+                width: 25px !important;
+                min-width: 25px !important;
+                text-align: center !important;
+                overflow: hidden;
+            }
+
+            .project-col {
+                width: 150px !important;
+                min-width: 130px !important;
+                word-break: break-word !important;
+            }
+
+            .num-col {
+                width: 35px !important;
+                min-width: 32px !important;
+                text-align: center !important;
+                overflow: hidden;
+            }
+
+            .pct-col {
+                width: 35px !important;
+                min-width: 32px !important;
+                text-align: center !important;
+                overflow: hidden;
+            }
+
+            .issue-col {
+                width: 85px !important;
+                min-width: 70px !important;
+                color: #e11d48 !important;
+            }
+
+            .solution-col {
+                width: 85px !important;
+                min-width: 70px !important;
+                color: #2563eb !important;
+            }
+
+            .table-nuxt div[contenteditable] {
+                min-height: 14px !important;
+                padding: 1px !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="flex">
+    <div id="app" v-cloak class="w-full flex-col h-screen overflow-hidden flex bg-[#fafafa]">
+        <!-- Sticky Header & Notifications Wrapper -->
+        <div class="sticky top-0 z-[100] w-full bg-white shadow-sm">
+            <!-- Header -->
+            <header
+                class="bg-white border-b border-slate-200 px-10 py-3 flex items-center justify-between sticky top-0 z-50 h-16 shadow-sm relative">
+                <div class="flex items-center gap-8">
+                    <!-- Left: Logo Only -->
+                    <div class="flex items-center gap-4">
+                        <div class="bg-blue-600 p-2 text-white rounded-lg shadow-sm">
+                            <i data-lucide="layout-grid" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Menu -->
+                    <nav
+                        class="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200/60 shadow-inner">
+                        <a href="/baocaongay"
+                            class="px-4 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all bg-white text-blue-600 shadow-sm border border-slate-200/50 ring-1 ring-black/5">
+                            Báo cáo ngày
+                        </a>
+                        <a href="/kehoachquanso"
+                            class="px-4 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-wider transition-all text-slate-400 hover:text-slate-600 hover:bg-white/50">
+                            Kế hoạch
+                        </a>
+                    </nav>
+                </div>
+
+                <!-- Right: Controls -->
+                <div class="flex items-center gap-3">
+                    <!-- Google Drive Input -->
+                    <div
+                        class="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 transition-all">
+                        <div class="pl-3 text-slate-300">
+                            <i data-lucide="database" class="w-4 h-4"></i>
+                        </div>
+                        <input type="text" v-model="fileId" placeholder="Nhập ID tệp tin hoặc link Google Drive..."
+                            class="bg-transparent border-none focus:ring-0 text-xs px-3 py-2 w-64 text-slate-600 font-medium">
+                        <button @click="fetchData" :disabled="loading"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 transition-colors flex items-center justify-center disabled:opacity-50">
+                            <i data-lucide="refresh-cw" class="w-4 h-4" :class="{'animate-spin': loading}"></i>
+                        </button>
+                    </div>
+
+                    <!-- Local File Upload -->
+                    <input type="file" ref="fileInput" @change="handleFileUpload" class="hidden"
+                        accept=".xlsx, .xls, .csv">
+                    <button @click="$refs.fileInput.click()" title="Tải Từ Máy Tính"
+                        class="bg-white hover:bg-slate-50 text-slate-600 p-2.5 border border-slate-200 rounded-lg transition-colors flex items-center justify-center shadow-sm">
+                        <i data-lucide="upload" class="w-4 h-4"></i>
+                    </button>
+
+
+                    <!-- Save Button -->
+                    <button @click="saveData" :disabled="saving || !dataLoaded" title="Lưu Thay Đổi Lên Google Sheets"
+                        class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center disabled:opacity-50 shadow-sm gap-2">
+                        <i data-lucide="save" class="w-4 h-4" :class="{'animate-pulse': saving}"></i>
+                        <span class="text-xs font-black uppercase tracking-wider">Lưu</span>
+                    </button>
+
+                    <!-- Sync Status -->
+                    <div class="flex flex-col items-end justify-center min-w-[100px]">
+                        <div class="flex items-center gap-1.5" :class="dataLoaded ? 'text-blue-600' : 'text-slate-400'">
+                            <div class="w-2 h-2 rounded-full" :class="dataLoaded ? 'bg-blue-600' : 'bg-slate-300'">
+                            </div>
+                            <span class="text-[10px] font-black tracking-widest uppercase">
+                                {{ dataLoaded ? 'ĐÃ ĐỒNG BỘ' : 'CHỜ DỮ LIỆU' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Notification Banner -->
+            <div v-if="notification"
+                :class="notification.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'"
+                class="border-b p-3 px-6 flex items-center justify-between z-40 relative">
+                <div class="flex items-center gap-2">
+                    <i :data-lucide="notification.type === 'success' ? 'check-circle' : 'alert-circle'"
+                        class="w-4 h-4 shrink-0"></i>
+                    <p class="text-xs font-medium">{{ notification.message }}</p>
+                </div>
+                <button @click="notification = null" class="text-slate-400 hover:text-slate-600">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div v-if="error"
+                class="bg-rose-50 border-b border-rose-100 p-3 px-6 flex items-center gap-2 z-40 relative">
+                <i data-lucide="alert-circle" class="w-4 h-4 text-rose-500 shrink-0"></i>
+                <p class="text-xs font-medium text-rose-600">{{ error }}</p>
+            </div>
+        </div> <!-- End of Sticky Wrapper -->
+
+        <!-- Layout Container -->
+        <div class="layout-container">
+            <!-- Sidebar Left -->
+            <aside class="sidebar-left custom-scrollbar">
+                <div v-if="dataLoaded" class="flex flex-col gap-4">
+                    <!-- Stats Cards -->
+                    <div class="card-nuxt !py-3 bg-slate-50/50 rounded-lg">
+                        <p class="text-slate-400 text-[10px] font-black uppercase mb-1 tracking-wider">Tổng dự án</p>
+                        <h3 class="text-xl font-black text-slate-800">{{ rows.length }}</h3>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="card-nuxt !py-3">
+                            <p class="text-slate-400 text-[9px] font-black uppercase mb-1 tracking-wider leading-none">
+                                Quân số KH</p>
+                            <h3 class="text-base font-black text-slate-500 mt-1">{{ formatNum(totalPlan) }}</h3>
+                        </div>
+                        <div class="card-nuxt !py-3">
+                            <p class="text-slate-400 text-[9px] font-black uppercase mb-1 tracking-wider leading-none">
+                                Quân số TT</p>
+                            <h3 class="text-base font-black text-blue-600 mt-1">{{ formatNum(totalActual) }}</h3>
+                        </div>
+                    </div>
+
+                    <div class="w-full h-px bg-slate-100 my-2"></div>
+
+                    <!-- Pie Charts (Tỷ trọng miền) -->
+                    <div class="flex flex-col gap-8">
+                        <div>
+                            <p class="text-[12px] font-black text-slate-700 uppercase mb-3 text-center tracking-widest">
+                                Tỷ trọng KH 3 Miền</p>
+                            <div id="pie-plan" class="w-full h-48"></div>
+                        </div>
+                        <div>
+                            <p class="text-[12px] font-black text-slate-700 uppercase mb-3 text-center tracking-widest">
+                                Tỷ trọng TT 3 Miền</p>
+                            <div id="pie-actual" class="w-full h-48"></div>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="h-full flex flex-col items-center justify-center text-center p-6">
+                    <i data-lucide="bar-chart-3" class="w-12 h-12 text-slate-100 mb-4"></i>
+                    <p class="text-slate-300 text-[11px] italic">Vui lòng tải dữ liệu để xem thống kê tỷ trọng</p>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="main-content custom-scrollbar overflow-y-auto pt-6 px-10 pb-12 relative flex-1">
+                <div v-if="!dataLoaded"
+                    class="h-full border-2 border-dashed border-slate-100 flex flex-col items-center justify-center gap-4 bg-white">
+                    <i data-lucide="layout-dashboard" class="w-16 h-16 text-slate-50"></i>
+                    <p class="text-slate-400 text-sm italic">Chưa có dữ liệu dự án. Vui lòng tải tệp để bắt đầu...</p>
+                </div>
+
+                <div v-else class="grid grid-cols-1 gap-6 pb-10">
+                    <!-- Header Title inside Main Content -->
+                    <div class="px-6 pt-2 pb-0 bg-white/50 mb-0">
+                        <h1 class="text-2xl font-black tracking-tight text-slate-800 uppercase">
+                            BÁO CÁO NGÀY QUÂN SỐ
+                        </h1>
+                        <p class="text-slate-500 text-sm font-bold mt-1 tracking-tight">Cập nhật: {{ today }}</p>
+                    </div>
+
+                    <div v-for="(group, regionName) in groupedData" :key="regionName" class="flex flex-col gap-4">
+                        <div
+                            class="relative flex items-center justify-between pl-6 pr-6 bg-white py-1.5 border border-slate-200 shadow-sm text-slate-800 overflow-hidden">
+                            <!-- Full-height accent bar -->
+                            <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-600"></div>
+
+                            <div class="flex items-center gap-4">
+                                <h2 class="text-base font-black uppercase tracking-tight">{{ regionName }}</h2>
+                                <span
+                                    class="text-blue-600 text-[11px] font-black px-2 py-0.5 bg-blue-50 uppercase rounded-md border border-blue-100">
+                                    {{ group.items.length }} DỰ ÁN
+                                </span>
+                            </div>
+                            <div class="flex gap-8 text-sm font-black uppercase tracking-tight">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4">
+                            <!-- Table -->
+                            <div class="card-nuxt !p-0 2xl:col-span-2">
+                                <div class="table-scroll-wrapper custom-scrollbar">
+                                    <table class="table-nuxt lg:table-fixed">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-left w-10 text-xs">STT</th>
+                                                <th class="text-left w-64 project-col">Dự Án</th>
+
+                                                <th class="text-center w-20">KH</th>
+                                                <th class="text-center w-20">TT</th>
+
+                                                <th class="text-center w-16">% Đạt</th>
+                                                <th class="text-center w-[28%] issue-col">Vấn đề</th>
+                                                <th class="text-center w-[28%] solution-col">Giải pháp</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(p, idx) in group.items" :key="idx"
+                                                class="hover:bg-blue-50/30 transition-colors">
+                                                <td class="text-slate-900 text-xs font-black text-center py-1 stt-col">
+                                                    {{ idx+1
+                                                    }}
+                                                </td>
+                                                <td
+                                                    class="font-bold text-slate-800 text-xs py-1 project-col max-w-[200px]">
+                                                    <div class="line-clamp-2 break-words leading-tight"
+                                                        :title="p.name">{{ p.name }}</div>
+                                                </td>
+                                                <td class="text-center font-bold text-slate-500 text-xs py-1 num-col">
+                                                    <div contenteditable="true"
+                                                        @blur="updateCellValue(p, 'plan', $event)"
+                                                        class="whitespace-pre-wrap break-words leading-tight p-1.5 border border-transparent hover:border-slate-200 hover:bg-white focus:bg-white focus:border-blue-400 focus:outline-none transition-all min-h-[20px]"
+                                                        :title="p.plan">{{ formatNum(p.plan) }}</div>
+                                                </td>
+                                                <td class="text-center font-black text-blue-700 text-xs py-1 num-col">
+                                                    <div contenteditable="true"
+                                                        @blur="updateCellValue(p, 'actual', $event)"
+                                                        class="whitespace-pre-wrap break-words leading-tight p-1.5 border border-transparent hover:border-blue-200 hover:bg-white focus:bg-white focus:border-blue-400 focus:outline-none transition-all min-h-[20px]"
+                                                        :title="p.actual">{{ formatNum(p.actual) }}</div>
+                                                </td>
+
+                                                <td class="text-center py-1 pct-col">
+                                                    <span :class="getPercentClass(p.actual, p.plan)"
+                                                        class="text-[9px] font-black px-1 py-0.5 border inline-block min-w-[36px] rounded-sm">
+                                                        {{ formatPercent(p.actual, p.plan) }}
+                                                    </span>
+                                                </td>
+                                                <td
+                                                    class="text-xs text-rose-600 font-medium py-0.5 px-2 issue-col max-w-[150px]">
+                                                    <div contenteditable="true"
+                                                        @blur="updateCellValue(p, 'issue', $event)"
+                                                        class="whitespace-pre-wrap break-words leading-tight p-1.5 border border-transparent hover:border-rose-200 hover:bg-white focus:bg-white focus:border-rose-400 focus:outline-none transition-all min-h-[20px]"
+                                                        :title="p.issue">{{ p.issue || '' }}</div>
+                                                </td>
+                                                <td
+                                                    class="text-xs text-blue-600 font-medium py-0.5 px-2 solution-col max-w-[150px]">
+                                                    <div contenteditable="true"
+                                                        @blur="updateCellValue(p, 'solution', $event)"
+                                                        class="whitespace-pre-wrap break-words leading-tight p-1.5 border border-transparent hover:border-blue-200 hover:bg-white focus:bg-white focus:border-blue-400 focus:outline-none transition-all min-h-[20px]"
+                                                        :title="p.solution">{{ p.solution || '' }}</div>
+                                                </td>
+                                            </tr>
+                                            <!-- Totals Row (Clean) -->
+                                            <tr class="bg-slate-50/80 font-black border-t-2 border-slate-200">
+                                                <td colspan="2"
+                                                    class="py-2 px-4 text-xs text-slate-500 uppercase tracking-wider">
+                                                    TỔNG {{ regionName }}</td>
+                                                <td class="text-center py-2 text-xs text-slate-900">{{
+                                                    formatNum(group.plan) }}</td>
+                                                <td class="text-center py-2 text-xs text-blue-700">{{
+                                                    formatNum(group.actual) }}</td>
+                                                <td class="text-center py-2">
+                                                    <span :class="getPercentClass(group.actual, group.plan)"
+                                                        class="text-[9px] font-black px-1 py-0.5 border inline-block min-w-[36px] rounded-sm">
+                                                        {{ formatPercent(group.actual, group.plan) }}
+                                                    </span>
+                                                </td>
+                                                <td colspan="2"></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Chart -->
+                            <div class="card-nuxt !p-0 overflow-hidden">
+                                <div :id="`chart-${regionName.replace(/\s+/g, '-')}`" class="chart-container"></div>
+                            </div>
+                        </div>
+                    </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted, nextTick, computed, watch } = Vue;
+
+
+        createApp({
+            setup() {
+                const fileId = ref('1TBZI91Fa7s1pwqVAj-_glCUonA9EdwQvOJepKOmOHFY');
+                const loading = ref(false);
+                const saving = ref(false);
+                const notification = ref(null);
+                const error = ref(null);
+                const dataLoaded = ref(false);
+                const rows = ref([]);
+                const scriptUrl = ref('https://script.google.com/macros/s/AKfycbwiN-dHbjWkmkEChqJxYdBOGbZpkCYO7gpPMpFtm70BPk-zi6g95JNn7qc2ZHsKP8Tg/exec'); // URL của Google Apps Script
+
+                const today = new Date().toLocaleDateString('vi-VN');
+                const charts = {};
+
+                const totalPlan = computed(() => rows.value.reduce((s, r) => s + r.plan, 0));
+                const totalActual = computed(() => rows.value.reduce((s, r) => s + r.actual, 0));
+
+                const updateCellValue = (item, field, event) => {
+                    const val = event.target.innerText.replace(/,/g, '');
+                    if (field === 'plan' || field === 'actual') {
+                        item[field] = parseFloat(val) || 0;
+                        event.target.innerText = formatNum(item[field]);
+                    } else {
+                        item[field] = event.target.innerText;
+                    }
+                };
+
+
+                const saveData = async () => {
+                    if (!scriptUrl.value) {
+                        notification.value = { type: 'error', message: 'Vui lòng cấu hình Apps Script URL để lưu.' };
+                        return;
+                    }
+                    saving.value = true;
+                    notification.value = null;
+                    try {
+                        await fetch(scriptUrl.value, {
+                            method: 'POST',
+                            mode: 'no-cors',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ fileId: fileId.value, data: rows.value })
+                        });
+                        notification.value = { type: 'success', message: 'Đã gửi yêu cầu lưu dữ liệu thành công!' };
+                    } catch (e) {
+                        notification.value = { type: 'error', message: 'Lỗi khi lưu dữ liệu.' };
+                    } finally {
+                        saving.value = false;
+                        setTimeout(() => { if (notification.value?.type === 'success') notification.value = null; }, 5000);
+                    }
+                };
+
+                const groupedData = computed(() => {
+                    const groups = {};
+                    rows.value.forEach(p => {
+                        const r = p.region || 'GLOBAL';
+                        if (!groups[r]) groups[r] = { items: [], plan: 0, actual: 0 };
+                        groups[r].items.push(p);
+                        groups[r].plan += p.plan;
+                        groups[r].actual += p.actual;
+                    });
+                    return groups;
+                });
+
+                const initRegionalCharts = () => {
+                    Object.keys(groupedData.value).forEach(regionName => {
+                        const chartId = `chart-${regionName.replace(/\s+/g, '-')}`;
+                        const dom = document.getElementById(chartId);
+                        if (!dom) return;
+
+                        const data = groupedData.value[regionName].items;
+                        // Điều chỉnh khoảng cách giữa các cặp đồ thị
+                        const rowHeight = 37; // Slightly increased for bar spacing
+                        const headerFooterHeight = 60;
+                        const totalHeight = (data.length * rowHeight) + headerFooterHeight;
+                        dom.style.height = `${totalHeight}px`;
+
+                        if (charts[regionName]) charts[regionName].dispose();
+                        const chart = echarts.init(dom, null, { renderer: 'svg' });
+                        charts[regionName] = chart;
+
+                        chart.setOption({
+                            textStyle: { fontFamily: "'Inter', sans-serif" },
+                            tooltip: {
+                                trigger: 'axis', axisPointer: { type: 'shadow' },
+                                backgroundColor: '#ffffff', borderRadius: 0, shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.05)',
+                                formatter: (params) => {
+                                    const p = params[0];
+                                    const pActual = params[1];
+                                    return `<div class="p-2"><strong>${p.name}</strong><br/>KH: ${p.value}<br/>TT: ${pActual.value}</div>`;
+                                }
+                            },
+                            legend: {
+                                top: 10,
+                                right: 10,
+                                icon: 'rect',
+                                itemWidth: 10,
+                                itemHeight: 10,
+                                textStyle: { fontSize: 10, fontWeight: 700, color: '#1e293b' }
+                            },
+                            grid: {
+                                left: '5',
+                                right: '30',
+                                bottom: '10px',
+                                top: '45px',
+                                height: (data.length * rowHeight) + 'px',
+                                containLabel: true
+                            },
+                            xAxis: {
+                                type: 'value',
+                                axisLabel: {
+                                    show: true,
+                                    fontSize: 9,
+                                    color: '#94a3b8',
+                                    formatter: (v) => v >= 1000 ? (v / 1000).toFixed(1) + 'k' : v
+                                },
+                                splitLine: {
+                                    show: true,
+                                    lineStyle: { color: '#f1f5f9', type: 'dashed' }
+                                },
+                                axisLine: { show: true, lineStyle: { color: '#f1f5f9' } }
+                            },
+                            yAxis: {
+                                type: 'category',
+                                data: data.map(i => i.name),
+                                inverse: true,
+                                axisLine: { show: true, lineStyle: { color: '#f1f5f9' } },
+                                axisTick: { show: false },
+                                splitLine: {
+                                    show: true,
+                                    lineStyle: { color: '#cbd5e1', type: 'solid' } // Bolder grid lines
+                                },
+                                axisLabel: {
+                                    show: true,
+                                    fontSize: 9,
+                                    fontWeight: 600,
+                                    color: '#475569',
+                                    width: 120, // Keep it relatively narrow to force wrap on long names
+                                    overflow: 'break',
+                                    lineHeight: 11
+                                }
+                            },
+                            series: [
+                                {
+                                    name: 'Kế hoạch', type: 'bar', data: data.map(i => i.plan),
+                                    barWidth: 8,
+                                    barGap: '50%',//Điều chỉnh khoảng cách giữa 2 thanh
+                                    itemStyle: { color: '#cbd5e1', borderRadius: 1 },
+                                    label: { show: true, position: 'right', fontSize: 10, fontWeight: 700, color: '#94a3b8' }
+                                },
+                                {
+                                    name: 'Thực tế', type: 'bar', data: data.map(i => Math.round(i.actual)),
+                                    barWidth: 8,
+                                    itemStyle: { color: '#3b82f6', borderRadius: 1 },
+                                    label: { show: true, position: 'right', fontSize: 11, fontWeight: 900, color: '#2563eb' }
+                                }
+                            ]
+                        });
+                    });
+                };
+
+                const initPieCharts = () => {
+                    const regions = Object.keys(groupedData.value);
+                    const planData = regions.map(r => ({ name: r, value: groupedData.value[r].plan }));
+                    const actualData = regions.map(r => ({ name: r, value: groupedData.value[r].actual }));
+
+                    const commonOption = {
+                        textStyle: { fontFamily: "'Inter', sans-serif" },
+                        tooltip: {
+                            trigger: 'item',
+                            formatter: '{b}: <br/><b>{c}</b> [{d}%]',//Đóng mở ngoặc %
+                            backgroundColor: '#ffffff', borderRadius: 2, shadowBlur: 10, shadowColor: 'rgba(0,0,0,0.05)'
+                        },
+                        legend: { show: false },
+                        color: ['#42b883', '#3b82f6', '#35495e', '#cbd5e1'],
+                        series: [{
+                            type: 'pie',
+                            radius: ['35%', '60%'], // Slightly smaller to give more space for labels
+                            avoidLabelOverlap: true,
+                            itemStyle: { borderRadius: 0, borderColor: '#fff', borderWidth: 2 },
+                            label: {
+                                show: true,
+                                position: 'outside',
+                                formatter: '{b}\n{c}\n[{d}%]',
+                                fontSize: 11,
+                                fontWeight: 700,
+                                color: '#1e293b',
+                                alignTo: 'edge',
+                                margin: 5
+                            },
+                            emphasis: {
+                                label: {
+                                    show: true,
+                                    fontSize: 11,
+                                    fontWeight: 'bold'
+                                }
+                            },
+                            labelLine: { show: true, length: 5, length2: 5 },
+                            data: []
+                        }]
+                    };
+
+                    const piePlanDom = document.getElementById('pie-plan');
+                    if (piePlanDom) {
+                        let chartPlan = echarts.getInstanceByDom(piePlanDom);
+                        if (!chartPlan) chartPlan = echarts.init(piePlanDom, null, { renderer: 'svg' });
+                        const opt = JSON.parse(JSON.stringify(commonOption));
+                        opt.series[0].data = planData;
+                        chartPlan.setOption(opt);
+                    }
+
+                    const pieActualDom = document.getElementById('pie-actual');
+                    if (pieActualDom) {
+                        let chartActual = echarts.getInstanceByDom(pieActualDom);
+                        if (!chartActual) chartActual = echarts.init(pieActualDom, null, { renderer: 'svg' });
+                        const opt = JSON.parse(JSON.stringify(commonOption));
+                        opt.series[0].data = actualData;
+                        chartActual.setOption(opt);
+                    }
+                };
+
+                const processWorkbook = (data, format = 'xlsx') => {
+                    let json = [];
+                    try {
+                        if (format === 'xlsx') {
+                            const workbook = XLSX.read(data, { type: 'array' });
+                            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                            json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                        } else if (format === 'csv') {
+                            const content = typeof data === 'string' ? data : new TextDecoder().decode(data);
+                            const workbook = XLSX.read(content, { type: 'string' });
+                            const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                            json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                        }
+                    } catch (e) {
+                        console.error("Parsing Error:", e);
+                        throw new Error("Lỗi khi xử lý dữ liệu. Vui lòng thử lại.");
+                    }
+
+                    const newRows = json.map(item => {
+                        const getVal = (names) => {
+                            const key = Object.keys(item).find(k => names.some(n => k.toUpperCase().includes(n.toUpperCase())));
+                            return key ? item[key] : "";
+                        };
+                        return {
+                            name: getVal(['TÊN DỰ ÁN', 'DỰ ÁN', 'PROJECT', 'TEN DU AN']),
+                            region: getVal(['VÙNG MIỀN', 'VÙNG', 'REGION', 'VUNG MIEN', 'MI?N']),
+                            plan: parseFloat(getVal(['KẾ HOẠCH', 'PLAN', 'TARGET', 'KE HOACH', 'K?']) || 0) || 0,
+                            actual: parseFloat(getVal(['THỰC TẾ', 'ACTUAL', 'REAL', 'THUC TE', 'TH?C']) || 0) || 0,
+                            issue: getVal(['VẤN ĐỀ', 'ISSUE', 'VAN DE', 'PROBLEMS']),
+                            solution: getVal(['GIẢI PHÁP', 'SOLUTION', 'GIAI PHAP'])
+                        };
+                    }).filter(r => r.name && !['TOTAL', 'TỔNG', 'SUM'].includes(r.name.toString().toUpperCase().trim()));
+
+                    if (newRows.length === 0) throw new Error("Không tìm thấy dữ liệu hợp lệ trong tệp.");
+
+                    rows.value = newRows;
+                    dataLoaded.value = true;
+
+                    nextTick(() => {
+                        initRegionalCharts();
+                        initPieCharts();
+                        lucide.createIcons();
+                    });
+                };
+
+                const fetchData = async () => {
+                    let id = fileId.value.trim();
+                    if (id.includes('/d/')) {
+                        const match = id.match(/\/d\/(.+?)\//);
+                        if (match) id = match[1];
+                    } else if (id.includes('id=')) {
+                        const match = id.match(/id=(.+?)(&|$)/);
+                        if (match) id = match[1];
+                    }
+
+                    if (!id) {
+                        error.value = "Vui lòng nhập ID tệp tin hoặc đường dẫn Google Drive.";
+                        return;
+                    }
+
+                    loading.value = true;
+                    error.value = null;
+                    try {
+                        const csvUrl = `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv`;
+                        const xlsxUrl = `https://docs.google.com/spreadsheets/d/${id}/export?format=xlsx`;
+
+                        const configs = [
+                            { url: csvUrl, format: 'csv' },
+                            { url: xlsxUrl, format: 'xlsx' },
+                            { url: `https://api.allorigins.win/raw?url=${encodeURIComponent(xlsxUrl)}`, format: 'xlsx' },
+                            { url: `https://corsproxy.io/?${encodeURIComponent(csvUrl)}`, format: 'csv' },
+                            { url: `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(csvUrl)}`, format: 'csv' }
+                        ];
+
+                        const fetchWithTimeout = async (config) => {
+                            const controller = new AbortController();
+                            const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+                            try {
+                                const resp = await fetch(config.url, { signal: controller.signal });
+                                clearTimeout(timeoutId);
+                                if (!resp.ok) throw new Error('Fetch failed');
+
+                                const buffer = await resp.arrayBuffer();
+                                if (buffer.byteLength < 200) throw new Error('Short data');
+
+                                const header = new TextDecoder().decode(buffer.slice(0, 1000));
+                                if (header.includes("<!DOCTYPE") || header.includes("<html") || header.includes("Sign in - Google Accounts")) {
+                                    throw new Error('HTML response');
+                                }
+                                return { buffer, format: config.format };
+                            } catch (err) {
+                                clearTimeout(timeoutId);
+                                throw err;
+                            }
+                        };
+
+                        const result = await Promise.any(configs.map(c => fetchWithTimeout(c)));
+                        processWorkbook(result.buffer, result.format);
+                        fileId.value = id;
+                    } catch (e) {
+                        console.error("Fetch Error:", e);
+                        error.value = "Không thể tải dữ liệu tự động. Vui lòng chia sẻ file công khai (Bất kỳ ai có liên kết) hoặc dùng tệp từ máy.";
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                const handleFileUpload = (ev) => {
+                    const f = ev.target.files[0]; if (!f) return;
+                    loading.value = true;
+                    const r = new FileReader();
+                    r.onload = (e) => { processWorkbook(new Uint8Array(e.target.result), 'xlsx'); loading.value = false; };
+                    r.readAsArrayBuffer(f);
+                };
+
+                const formatNum = (v) => v.toLocaleString();
+                const formatPercent = (a, p) => p === 0 ? '0%' : Math.round((a / p) * 100) + '%';
+                const getPercentClass = (a, p) => {
+                    const pct = p === 0 ? 0 : (a / p) * 100;
+                    if (pct >= 100) return 'text-blue-600 bg-blue-50 border-blue-100';
+                    return 'text-rose-500 bg-rose-50 border-rose-100';
+                };
+
+                watch(rows, () => {
+                    nextTick(() => {
+                        initRegionalCharts();
+                        initPieCharts();
+                    });
+                }, { deep: true });
+
+                onMounted(() => {
+
+                    lucide.createIcons();
+                    window.addEventListener('resize', () => Object.values(charts).forEach(c => c.resize()));
+                    fetchData();
+                });
+
+                return {
+                    fileId, loading, saving, notification, error, dataLoaded, today, groupedData,
+                    totalPlan, totalActual, rows, scriptUrl,
+                    fetchData, handleFileUpload, formatNum, formatPercent, getPercentClass, updateCellValue, saveData
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
